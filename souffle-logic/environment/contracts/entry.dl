@@ -1,0 +1,29 @@
+// ==========================================================================
+// Entry contract:
+//
+// Methods the framework calls although no code in the application program does.
+// ==========================================================================
+
+
+
+.comp EntryTables {
+
+  // A method the framework calls, without a call to it in the application program.
+  // Its `this` is the mock object the engine made for its class (ExternallyCreatedType).
+  // Its parameters get what InjectedWith says, or a mock of their type when
+  // not known (e.g. a request body).
+  // Methods with injected parameters are added automatically (contracts/implied.dl).
+  // Spring: @GetMapping, @PostMapping, @Scheduled, @EventListener etc...
+  // Jakarta: @GET, @POST, @PostConstruct etc...
+  .decl EntryPoint(?method:Method)
+}
+
+// The shared table is entry.EntryPoint.
+.init entry = EntryTables
+
+
+
+// Specs and frameworks inherit this (e.g. .comp Spring : Entry, ...).
+.comp Entry : EntryTables {
+  entry.EntryPoint(?method) :- EntryPoint(?method).
+}

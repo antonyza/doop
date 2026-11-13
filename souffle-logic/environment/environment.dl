@@ -1,0 +1,57 @@
+// ==========================================================================
+// Environment:
+//
+// Everything outside the application program that creates its objects,
+// calls its methods or fills its fields like DI containers, servers etc...
+// Engines include this file and only read the shared contract tables
+// without knowing anything about the underlying frameworks.
+//
+// contracts/
+//   The shared contract tables: the only thing engines read.
+//   Also the contract rows that always follow from other rows (implied.dl)
+//   and the checks that report wrong rows (checks.dl).
+//
+// helpers/
+//   Common shortcuts over the facts so specs and frameworks write fewer lines.
+//
+// specs/
+//   Published standards that every implementation follows (e.g. Jakarta),
+//   so their implementations (e.g. Hibernate) need no file of their own
+//   for what the standard covers.
+//
+// frameworks/
+//   One file per framework/library (e.g. spring.dl), for what no standard says:
+//   which classes it creates or injects into and what goes into their slots.
+//
+// Each spec and framework is a component that inherits the contracts it fills
+// (.comp Spring : Creation, Entry, Injection).
+// It gets its own copy of the contract tables, holding only its own rows,
+// and the contract copies those rows into the shared tables automatically.
+// For example: ExternallyCreatedType inside Spring is its own copy
+// while creation.ExternallyCreatedType is the shared table.
+// Its other relations stay in its own namespace (spring.*), so specs and frameworks
+// never read each other, only the shared tables connect them.
+//
+// Including a spec or framework activates it.
+// ==========================================================================
+
+
+// Contracts
+#include "contracts/creation.dl"
+#include "contracts/entry.dl"
+#include "contracts/injection.dl"
+#include "contracts/implied.dl"
+#include "contracts/checks.dl"
+
+
+// Helpers
+#include "helpers/annotations.dl"
+#include "helpers/constructors.dl"
+
+
+// Specs
+// #include "specs/jakarta/...dl"
+
+
+// Frameworks
+// #include "frameworks/spring.dl"

@@ -1,0 +1,98 @@
+// ==========================================================================
+// Injection contract:
+//
+// Classes the framework injects into, the fields and parameters it fills
+// and what it fills them with.
+// ==========================================================================
+
+
+
+// A field or a parameter the framework fills.
+// A parameter is its variable from FormalParam.
+.type Slot = Field | Var
+
+// What can go into a slot: a class or interface, a method or a field (see InjectedWith).
+.type Source = Type | Method | Field
+
+
+
+.comp InjectionTables {
+
+  // A class whose objects get injected: the framework fills their injected fields and parameters.
+  // It's separate from ExternallyCreatedType since a framework may inject into objects
+  // it didn't create (e.g. Spring into the test classes JUnit creates) and may create
+  // objects it never injects into (e.g. JPA entities).
+  // The engine fills the injected slots only in objects of these classes and
+  // also in the ones the program creates (e.g. objects returned from Spring @Bean methods).
+  // It doesn't mean the class is put into slots, that's InjectedWith.
+  // It may be abstract when the framework subclasses it at runtime (e.g. a Spring bean
+  // with @Lookup methods).
+  // Spring: @Component classes, @SpringBootTest classes
+  // Jakarta: JPA entity listeners (not entities)
+  .decl InjectionTarget(?class:ClassType)
+
+
+  // A field the framework fills, in the objects of the injection targets that have it.
+  // Spring: @Autowired
+  // Jakarta: @Inject
+  .decl InjectedField(?field:Field)
+
+
+  // A parameter the framework fills with one of its objects.
+  // Spring: parameters of the constructor it uses, of @Autowired setters and of @Bean methods
+  // Jakarta: parameters of @Inject constructors and methods and of @Produces methods
+  .decl InjectedParam(?param:Var)
+
+
+  // What the framework may put into a slot, after its own resolution logic (types, qualifiers, @Primary etc..).
+  // Several rows for one slot mean any of them.
+  // Sources are:
+  //   class or interface: the mock object the engine made for it (ExternallyCreatedType)
+  //   method:             what the method returns when the framework calls it
+  //   field:              the value of that field
+  // A slot without rows gets a mock of its type.
+  .decl InjectedWith(?slot:Slot, ?source:Source)
+}
+
+// The shared tables are injection.InjectionTarget, injection.InjectedField,
+// injection.InjectedParam and injection.InjectedWith.
+.init injection = InjectionTables
+
+
+
+// Specs and frameworks inherit this (e.g. .comp Spring : Injection, ...).
+.comp Injection : InjectionTables {
+  injection.InjectionTarget(?class)      :- InjectionTarget(?class).
+  injection.InjectedField(?field)        :- InjectedField(?field).
+  injection.InjectedParam(?param)        :- InjectedParam(?param).
+  injection.InjectedWith(?slot, ?source) :- InjectedWith(?slot, ?source).
+
+
+  // -------------------------------------------------------------------------------------
+  // A spec or framework says what goes into the slots only of the classes it injects into
+  // (its own InjectionTarget), so it never decides for the classes of another framework.
+  // Checked here since only here its own rows are known apart from the others'.
+
+  // The fields and parameters of this spec's/framework's own injection targets
+  // (declared in the class or a superclass).
+  .decl OwnSlot(?slot:Slot)
+
+  OwnSlot(?field) :-
+    InjectionTarget(?class),
+    basic.SubtypeOf(?class, ?declaring),
+    Field_DeclaringType(?field, ?declaring).
+
+  OwnSlot(?param) :-
+    InjectionTarget(?class),
+    basic.SubtypeOf(?class, ?declaring),
+    Method_DeclaringType(?method, ?declaring),
+    FormalParam(_, ?method, ?param).
+
+  // Static fields belong to no object, so a file may fill one without injecting into
+  // objects of its class (e.g. Guice requestStaticInjection).
+  ContractProblem("InjectedWith", ?slot, "Slot is not in a class this file injects into") :-
+    InjectedWith(?slot, _),
+    !OwnSlot(?slot),
+    !Field_Modifier("static", ?slot).
+  // -------------------------------------------------------------------------------------
+}

@@ -1,0 +1,73 @@
+// ==========================================================================
+// Annotations helper:
+//
+// Follows annotation chains (@RestController is annotated with @Controller,
+// which is annotated with @Component), so a spec or framework only names the annotation
+// at the end of the chain (aka the root, @Component).
+// ==========================================================================
+
+
+
+
+// --------------------------------------------------------------------------
+// Chains
+// --------------------------------------------------------------------------
+
+// Every annotation used somewhere in the facts.
+.decl AnnotationType(?annotation:Annotation)
+
+AnnotationType(?annotation) :- Type_Annotation(_, ?annotation).
+AnnotationType(?annotation) :- Method_Annotation(_, ?annotation).
+AnnotationType(?annotation) :- Field_Annotation(_, ?annotation).
+AnnotationType(?annotation) :- Param_Annotation(_, _, ?annotation).
+
+
+// The annotation is the root itself or is annotated with it, directly or through a chain.
+// Spring: CarriesAnnotation(@Service, @Component), CarriesAnnotation(@GetMapping, @RequestMapping)
+.decl CarriesAnnotation(?annotation:Annotation, ?root:Annotation)
+
+CarriesAnnotation(?annotation, ?annotation) :-
+  AnnotationType(?annotation).
+
+CarriesAnnotation(?annotation, ?root) :-
+  AnnotationType(?annotation),
+  Type_Annotation(?annotation, ?meta),
+  CarriesAnnotation(?meta, ?root).
+
+
+
+
+// --------------------------------------------------------------------------
+// Shortcuts
+// --------------------------------------------------------------------------
+// The class, method, field or parameter has an annotation that carries the root.
+
+
+// Spring: TypeCarries(OrderController, @Component) because of @RestController
+.decl TypeCarries(?type:ReferenceType, ?root:Annotation)
+
+TypeCarries(?type, ?root) :-
+  Type_Annotation(?type, ?annotation),
+  CarriesAnnotation(?annotation, ?root).
+
+
+.decl MethodCarries(?method:Method, ?root:Annotation)
+
+MethodCarries(?method, ?root) :-
+  Method_Annotation(?method, ?annotation),
+  CarriesAnnotation(?annotation, ?root).
+
+
+.decl FieldCarries(?field:Field, ?root:Annotation)
+
+FieldCarries(?field, ?root) :-
+  Field_Annotation(?field, ?annotation),
+  CarriesAnnotation(?annotation, ?root).
+
+
+.decl ParamCarries(?param:Var, ?root:Annotation)
+
+ParamCarries(?param, ?root) :-
+  Param_Annotation(?method, ?index, ?annotation),
+  FormalParam(?index, ?method, ?param),
+  CarriesAnnotation(?annotation, ?root).

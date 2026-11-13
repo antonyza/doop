@@ -1,0 +1,35 @@
+// ==========================================================================
+// Creation contract:
+//
+// Classes and interfaces whose objects the framework creates instead of the program.
+// Framework here means any code outside the application program like
+// a DI container, a servlet container, a test runner etc...
+// ==========================================================================
+
+
+
+.comp CreationTables {
+
+  // A class or interface the framework creates objects of (no "new" in the application program).
+  // For an interface or an abstract class, the framework creates an object of a class it makes at runtime,
+  // so the type stands for that class (e.g. a Spring Data repository, a Spring bean with @Lookup methods).
+  // The engine makes one mock object for it and that object is used whenever the
+  // framework calls one of its methods or injects it somewhere.
+  // Its methods without code (e.g. those of an interface) return a mock of their return type.
+  // It doesn't say which constructor runs, which methods get called or where
+  // the object gets injected. Specs and frameworks say those with EntryPoint and InjectedWith.
+  // It doesn't say either that the framework fills the object's fields (that's InjectionTarget).
+  // Spring: @Component (and @Service, @Controller etc.. via meta-annotations), Spring Data repositories
+  // Jakarta: @Entity
+  .decl ExternallyCreatedType(?type:ReferenceType)
+}
+
+// The shared table is creation.ExternallyCreatedType.
+.init creation = CreationTables
+
+
+
+// Specs and frameworks inherit this (e.g. .comp Spring : Creation, ...).
+.comp Creation : CreationTables {
+  creation.ExternallyCreatedType(?type) :- ExternallyCreatedType(?type).
+}
